@@ -21,7 +21,7 @@ fn print_usage() {
 }
 
 fn run(source: String) -> LoxResult {
-    let scanner = Scanner::new();
+    let mut scanner = Scanner::new();
     let tokens = scanner.scan_tokens(source);
 
     dbg!(tokens);

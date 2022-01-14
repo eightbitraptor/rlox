@@ -25,7 +25,7 @@ impl Scanner {
     }
 
     // TODO: Maybe impl Iterator?
-    pub fn scan_tokens(mut self, source: String) -> Vec<Token> {
+    pub fn scan_tokens(&mut self, source: String) -> &Vec<Token> {
         while !self.end_of_source(&source) {
             self.start = self.current;
             match self.scan_token(&source) {
@@ -34,7 +34,7 @@ impl Scanner {
             }
         }
 
-        self.tokens
+        &self.tokens
     }
 
     fn scan_token(&mut self, source: &str) -> LoxResult {
@@ -80,6 +80,11 @@ impl Scanner {
                 } else {
                     self.add_token(Slash, source);
                 }
+            }
+
+            // Whitespace
+            Some(c) if c.is_whitespace() => {
+                if c == '\n' { self.line+=1 };
             }
 
             // Defaults, and unknowns
@@ -172,11 +177,29 @@ mod tests {
 
     #[test]
     fn test_scan_tokens_slash_with_following_slash_is_a_comment() {
-        let tokens = Scanner::new()
+        let mut scanner = Scanner::new();
+        let tokens = scanner
             .scan_tokens(
                 String::from("// Comments are ignored")
             );
         assert!(tokens.is_empty());
+    }
+
+    #[test]
+    fn test_scan_tokens_seperated_by_whitespace() {
+        let mut scanner = Scanner::new();
+        let tokens = scanner.scan_tokens(String::from("! \t*"));
+        assert_eq!(2, tokens.len());
+        assert_eq!(Bang, tokens[0].ttype);
+        assert_eq!(Star, tokens[1].ttype);
+    }
+
+    #[test]
+    fn test_scan_tokens_seperated_by_newlines_increments_line() {
+        let mut scanner = Scanner::new();
+        let tokens = scanner.scan_tokens(String::from("!\n*"));
+        assert_eq!(2, tokens.len());
+        assert_eq!(2, scanner.line)
     }
 
     #[test]
@@ -187,7 +210,8 @@ mod tests {
     }
 
     fn token_scanned(value: &str, ttype: TokenType) -> bool {
-        let tokens = Scanner::new().scan_tokens(String::from(value));
+        let mut scanner = Scanner::new();
+        let tokens = scanner.scan_tokens(String::from(value));
         tokens[0].ttype == ttype
     }
 }
