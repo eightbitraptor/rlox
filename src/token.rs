@@ -3,6 +3,7 @@ use crate::token_type::TokenType;
 #[derive(Debug)]
 pub enum LoxType {
     Text(String),
+    Number(f64),
 }
 
 #[derive(Debug)]

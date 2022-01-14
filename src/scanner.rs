@@ -94,7 +94,13 @@ impl Scanner {
                     Err(e) => error = Some(e),
                 }
             },
-
+            Some(d) if d.is_numeric() => {
+                println!("{} is numeric", d);
+                match self.number(source) {
+                    Ok(v) => self.add_token_number(Number, v, source),
+                    Err(e) => error = Some(e),
+                }
+            },
 
             // Defaults, and unknowns
             Some(_) => {
@@ -121,7 +127,9 @@ impl Scanner {
         }
 
         if self.end_of_source(source) {
-            return Err(LoxError { line: self.line as i32, place: String::from(""), message: String::from("Unterminated String")});
+            return Err(LoxError { line: self.line as i32,
+                                  place: String::from(""),
+                                  message: String::from("Unterminated String")});
         }
 
         self.advance(source);
@@ -129,8 +137,40 @@ impl Scanner {
         Ok(String::from(&source[self.start+1..self.current-1]))
     }
 
+    fn number(&mut self, source: &str) -> Result<f64, LoxError> {
+        while self.peek(source)
+            .ok_or(LoxError { line: self.line as i32,
+                              place: String::from(""),
+                              message: String::from("")})?
+            .is_numeric() {
+                self.advance(source);
+            }
+
+        if self.peek(source).contains(&'.') && self.peek_next(source).unwrap().is_numeric() {
+            self.advance(source);
+
+            while self.peek(source)
+                .ok_or(LoxError { line: self.line as i32,
+                                  place: String::from(""),
+                                  message: String::from("")})?
+                .is_numeric() {
+                    self.advance(source);
+                }
+        }
+
+        Ok(String::from(&source[self.start..self.current]).parse().unwrap())
+    }
+
     fn add_token_string(&mut self, ttype: TokenType, literal: String, source: &str) {
         let literal = LoxType::Text(literal);
+        let lexeme = String::from(&source[self.start..self.current]);
+        let token = Token::new(ttype, lexeme, literal, self.line);
+
+        self.tokens.push(token);
+    }
+
+    fn add_token_number(&mut self, ttype: TokenType, literal: f64, source: &str) {
+        let literal = LoxType::Number(literal);
         let lexeme = String::from(&source[self.start..self.current]);
         let token = Token::new(ttype, lexeme, literal, self.line);
 
@@ -169,6 +209,14 @@ impl Scanner {
             Some('\0')
         } else {
             source.chars().nth(self.current)
+        }
+    }
+
+    fn peek_next(&self, source: &str) -> Option<char> {
+        if self.current + 1 as usize >= source.len() {
+            Some('\0')
+        } else {
+            source.chars().nth(self.current + 1)
         }
     }
 }
@@ -274,6 +322,32 @@ mod tests {
             _ => { panic!("unexpected variant in LoxType"); },
         }
         assert_eq!(2, scanner.line);
+    }
+
+    #[test]
+    fn test_scan_tokens_numbers() {
+        let mut scanner = Scanner::new();
+        let tokens = scanner.scan_tokens(String::from("123"));
+        assert_eq!(1, tokens.len());
+        assert_eq!(Number, tokens[0].ttype);
+
+        match &tokens[0].literal {
+            LoxType::Number(s) => assert_eq!(123_f64, *s),
+            _ => { panic!("unexpected variant in LoxType") },
+        }
+    }
+
+    #[test]
+    fn test_scan_tokens_floating_point_numbers() {
+        let mut scanner = Scanner::new();
+        let tokens = scanner.scan_tokens(String::from("123.456"));
+        assert_eq!(1, tokens.len());
+        assert_eq!(Number, tokens[0].ttype);
+
+        match &tokens[0].literal {
+            LoxType::Number(s) => assert_eq!(123.456, *s),
+            _ => { panic!("unexpected variant in LoxType") },
+        }
     }
 
     #[test]
