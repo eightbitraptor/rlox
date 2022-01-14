@@ -87,6 +87,15 @@ impl Scanner {
                 if c == '\n' { self.line+=1 };
             }
 
+            // Types
+            Some('"') => {
+                match self.string(source) {
+                    Ok(v) => self.add_token_string(LoxString, v, source),
+                    Err(e) => error = Some(e),
+                }
+            }
+
+
             // Defaults, and unknowns
             Some(_) => {
                 error = Some(LoxError {
@@ -103,6 +112,29 @@ impl Scanner {
         } else {
             Ok(())
         }
+    }
+
+    fn string(&mut self, source: &str) -> Result<String, LoxError> {
+        while !self.peek(source).contains(&'"') && !self.end_of_source(source) {
+            if self.peek(source).contains(&'\n') { self.line+= 1 }
+            self.advance(source);
+        }
+
+        if self.end_of_source(source) {
+            return Err(LoxError { line: self.line as i32, place: String::from(""), message: String::from("Unterminated String")});
+        }
+
+        self.advance(source);
+
+        Ok(String::from(&source[self.start+1..self.current-1]))
+    }
+
+    fn add_token_string(&mut self, ttype: TokenType, literal: String, source: &str) {
+        let literal = LoxType::Text(literal);
+        let lexeme = String::from(&source[self.start..self.current]);
+        let token = Token::new(ttype, lexeme, literal, self.line);
+
+        self.tokens.push(token);
     }
 
     fn add_token(&mut self, ttype: TokenType, source: &str) {
@@ -144,6 +176,7 @@ impl Scanner {
 #[cfg(test)]
 mod tests {
     use super::Scanner;
+    use crate::token::LoxType;
     use crate::token_type::TokenType;
     use crate::token_type::TokenType::*;
 
@@ -200,6 +233,47 @@ mod tests {
         let tokens = scanner.scan_tokens(String::from("!\n*"));
         assert_eq!(2, tokens.len());
         assert_eq!(2, scanner.line)
+    }
+
+    #[test]
+    fn test_scan_tokens_strings() {
+        let mut scanner = Scanner::new();
+        let tokens = scanner.scan_tokens(String::from("\"Lox Strings are double quoted\""));
+        assert_eq!(1, tokens.len());
+        assert_eq!(LoxString, tokens[0].ttype);
+
+        match &tokens[0].literal {
+            LoxType::Text(s) => assert_eq!("Lox Strings are double quoted", s),
+            _ => { panic!("unexpected variant in LoxType") },
+        }
+    }
+
+    #[test]
+    fn test_scan_tokens_strings_with_newlines() {
+        let mut scanner = Scanner::new();
+        let tokens = scanner.scan_tokens(String::from("\"Lox Strings are\n double quoted\""));
+        assert_eq!(1, tokens.len());
+        assert_eq!(LoxString, tokens[0].ttype);
+
+        match &tokens[0].literal {
+            LoxType::Text(s) => assert_eq!("Lox Strings are\n double quoted", s),
+            _ => { panic!("unexpected variant in LoxType"); },
+        }
+        assert_eq!(2, scanner.line);
+    }
+
+    #[test]
+    fn test_scan_tokens_strings_with_valid_tokens_within() {
+        let mut scanner = Scanner::new();
+        let tokens = scanner.scan_tokens(String::from("\"Lox *Strings* are\n -double- quoted\""));
+        assert_eq!(1, tokens.len());
+        assert_eq!(LoxString, tokens[0].ttype);
+
+        match &tokens[0].literal {
+            LoxType::Text(s) => assert_eq!("Lox *Strings* are\n -double- quoted", s),
+            _ => { panic!("unexpected variant in LoxType"); },
+        }
+        assert_eq!(2, scanner.line);
     }
 
     #[test]
