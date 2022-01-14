@@ -1,5 +1,6 @@
 use crate::token_type::TokenType;
 use crate::token_type::TokenType::*;
+use crate::error::*;
 
 use crate::token::Token;
 
@@ -27,15 +28,20 @@ impl Scanner {
     pub fn scan_tokens(mut self, source: String) -> Vec<Token> {
         while !self.end_of_source(&source) {
             self.start = self.current;
-            self.scan_token(&source);
+            match self.scan_token(&source) {
+                Ok(()) => (),
+                Err(e) => println!("{}", e),
+            }
         }
 
         self.tokens
     }
 
-    fn scan_token(&mut self, source: &str) {
+    fn scan_token(&mut self, source: &str) -> LoxResult {
         let c = self.advance(source);
+        let mut error = None;
 
+        println!("scanning token : {:?}", &c);
         match c {
             Some('(') => self.add_token(LeftParen, source),
             Some(')') => self.add_token(RightParen, source),
@@ -47,9 +53,21 @@ impl Scanner {
             Some('+') => self.add_token(Plus, source),
             Some(';') => self.add_token(Semicolon, source),
             Some('*') => self.add_token(Star, source),
-            Some(_) => (),
+            Some(_) => {
+                error = Some(LoxError {
+                    line: self.line as i32,
+                    place: String::from(""),
+                    message: String::from("Invalid Character")
+                });
+            },
             None => (),
         };
+
+        if let Some(e) = error {
+            Err(e)
+        } else {
+            Ok(())
+        }
     }
 
     fn add_token(&mut self, ttype: TokenType, source: &str) {
@@ -80,7 +98,7 @@ mod tests {
     use crate::token_type::TokenType::*;
 
     #[test]
-    fn test_single_character_tokens() {
+    fn test_scan_tokens_all_single_character_tokens() {
         assert!(token_scanned("(", LeftParen));
         assert!(token_scanned(")", RightParen));
         assert!(token_scanned("{", LeftBrace));
@@ -91,6 +109,13 @@ mod tests {
         assert!(token_scanned("+", Plus));
         assert!(token_scanned(";", Semicolon));
         assert!(token_scanned("*", Star));
+    }
+
+    #[test]
+    fn test_scan_token_invalid_token_returns_err() {
+        let bad_tokens = Scanner::new().scan_token("?");
+        assert!(bad_tokens.is_err());
+        assert_eq!(bad_tokens.unwrap_err().message, "Invalid Character");
     }
 
     fn token_scanned(value: &str, ttype: TokenType) -> bool {
