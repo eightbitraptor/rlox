@@ -39,7 +39,6 @@ impl Scanner {
 
     fn scan_token(&mut self, source: &str) -> LoxResult<()> {
         let c = self.advance(source);
-        let mut error = None;
 
         match c {
             Some('(') => self.add_token(LeftParen, source),
@@ -77,51 +76,41 @@ impl Scanner {
                     while !self.peek(source).contains(&'\n')  && !self.end_of_source(source) {
                         self.advance(source);
                     }
+                    Ok(())
                 } else {
-                    self.add_token(Slash, source);
+                    self.add_token(Slash, source)
                 }
             },
 
             // Whitespace
             Some(c) if c.is_whitespace() => {
                 if c == '\n' { self.line+=1 };
+                Ok(())
             },
 
             // Types
             Some('"') => {
                 match self.string(source) {
                     Ok(v) => self.add_token_stringish(LoxString, v, source),
-                    Err(e) => error = Some(e),
+                    Err(e) => Err(e),
                 }
             },
             Some(d) if d.is_numeric() => {
                 match self.number(source) {
                     Ok(v) => self.add_token_numeric(Number, v, source),
-                    Err(e) => error = Some(e),
+                    Err(e) => Err(e),
                 }
             },
             Some(c) if c.is_alphabetic() || c == '_' => {
                 match self.identifier(source) {
                     Ok(v) => self.add_token_stringish(self.keywords(&v).unwrap(), v, source),
-                    Err(e) => error = Some(e),
+                    Err(e) => Err(e),
                 }
             }
 
             // Defaults, and unknowns
-            Some(_) => {
-                error = Some(LoxError {
-                    line: self.line as i32,
-                    place: String::from(""),
-                    message: String::from("Invalid Character")
-                });
-            },
-            None => (),
-        };
-
-        if let Some(e) = error {
-            Err(e)
-        } else {
-            Ok(())
+            Some(_) => { Err(LoxError::new(self.line as i32, "Invalid Character")) },
+            None => Ok(()),
         }
     }
 
@@ -132,9 +121,7 @@ impl Scanner {
         }
 
         if self.end_of_source(source) {
-            return Err(LoxError { line: self.line as i32,
-                                  place: String::from(""),
-                                  message: String::from("Unterminated String")});
+            return Err(LoxError::new(self.line as i32, "Unterminated String"));
         }
 
         self.advance(source);
@@ -144,9 +131,7 @@ impl Scanner {
 
     fn number(&mut self, source: &str) -> LoxResult<f64> {
         while self.peek(source)
-            .ok_or(LoxError { line: self.line as i32,
-                              place: String::from(""),
-                              message: String::from("")})?
+            .ok_or(LoxError::new(self.line as i32, "Invalid peek into source"))?
             .is_numeric() {
                 self.advance(source);
             }
@@ -155,9 +140,7 @@ impl Scanner {
             self.advance(source);
 
             while self.peek(source)
-                .ok_or(LoxError { line: self.line as i32,
-                                  place: String::from(""),
-                                  message: String::from("")})?
+                .ok_or(LoxError::new(self.line as i32, "Invalid peek into source"))?
                 .is_numeric() {
                     self.advance(source);
                 }
@@ -169,37 +152,39 @@ impl Scanner {
 
 
     fn identifier(&mut self, source: &str) -> LoxResult<String> {
-        while is_alphanumeric(&self.peek(source)
-            .ok_or(LoxError { line: self.line as i32,
-                                  place: String::from(""),
-                                  message: String::from("")})?) {
+        while is_alphanumeric(
+            &self.peek(source).ok_or(LoxError::new(self.line as i32, "Invalid peek into source"))?
+        ) {
             self.advance(source);
         }
 
         Ok(String::from(&source[self.start..self.current]))
     }
 
-    fn add_token_stringish(&mut self, ttype: TokenType, literal: String, source: &str) {
+    fn add_token_stringish(&mut self, ttype: TokenType, literal: String, source: &str) -> LoxResult<()> {
         let literal = LoxType::Text(literal);
         let lexeme = String::from(&source[self.start..self.current]);
         let token = Token::new(ttype, lexeme, literal, self.line);
 
         self.tokens.push(token);
+        Ok(())
     }
 
-    fn add_token_numeric(&mut self, ttype: TokenType, literal: f64, source: &str) {
+    fn add_token_numeric(&mut self, ttype: TokenType, literal: f64, source: &str) -> LoxResult<()> {
         let literal = LoxType::Number(literal);
         let lexeme = String::from(&source[self.start..self.current]);
         let token = Token::new(ttype, lexeme, literal, self.line);
 
         self.tokens.push(token);
+        Ok(())
     }
 
-    fn add_token(&mut self, ttype: TokenType, source: &str) {
+    fn add_token(&mut self, ttype: TokenType, source: &str) -> LoxResult<()> {
         let lexeme = String::from(&source[self.start..self.current]);
         let token = Token::new(ttype, lexeme, LoxType::Text(String::from("")), self.line);
 
         self.tokens.push(token);
+        Ok(())
     }
 
     fn end_of_source(&self, source: &str) -> bool {
@@ -423,7 +408,7 @@ mod tests {
     fn test_scan_token_invalid_token_returns_err() {
         let bad_tokens = Scanner::new().scan_token("?");
         assert!(bad_tokens.is_err());
-        assert_eq!(bad_tokens.unwrap_err().message, "Invalid Character");
+        assert_eq!(bad_tokens.unwrap_err().message.unwrap(), "Invalid Character");
     }
 
     fn token_scanned(value: &str, ttype: TokenType) -> bool {

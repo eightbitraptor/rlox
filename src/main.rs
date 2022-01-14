@@ -67,11 +67,7 @@ fn main() {
     let result = match &args.len() {
         1 => run_prompt(),
         2 => run_file(&args[1]),
-        _ => Err(LoxError {
-            line: -1,
-            place: String::from(""),
-            message: String::from("Wrong number of args"),
-        }),
+        _ => Err(LoxError::new(-1, "Wrong number of args"))
     };
 
     let status = match result {
