@@ -2,7 +2,7 @@ use crate::token_type::TokenType;
 use crate::token_type::TokenType::*;
 use crate::error::*;
 
-use crate::token::Token;
+use crate::token::{Token, LoxType};
 
 #[derive(Debug)]
 pub struct Scanner {
@@ -107,7 +107,7 @@ impl Scanner {
 
     fn add_token(&mut self, ttype: TokenType, source: &str) {
         let lexeme = String::from(&source[self.start..self.current]);
-        let token = Token::new(ttype, lexeme, String::from(""), self.line);
+        let token = Token::new(ttype, lexeme, LoxType::Text(String::from("")), self.line);
 
         self.tokens.push(token);
     }
