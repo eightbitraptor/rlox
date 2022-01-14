@@ -80,12 +80,12 @@ impl Scanner {
                 } else {
                     self.add_token(Slash, source);
                 }
-            }
+            },
 
             // Whitespace
             Some(c) if c.is_whitespace() => {
                 if c == '\n' { self.line+=1 };
-            }
+            },
 
             // Types
             Some('"') => {
@@ -93,7 +93,7 @@ impl Scanner {
                     Ok(v) => self.add_token_string(LoxString, v, source),
                     Err(e) => error = Some(e),
                 }
-            }
+            },
 
 
             // Defaults, and unknowns
