@@ -41,7 +41,6 @@ impl Scanner {
         let c = self.advance(source);
         let mut error = None;
 
-        println!("scanning token : {:?}", &c);
         match c {
             Some('(') => self.add_token(LeftParen, source),
             Some(')') => self.add_token(RightParen, source),
@@ -53,6 +52,26 @@ impl Scanner {
             Some('+') => self.add_token(Plus, source),
             Some(';') => self.add_token(Semicolon, source),
             Some('*') => self.add_token(Star, source),
+
+            // These tokens consist of two specific characters
+            Some('!') => {
+                let token = if self.match_next('=', source) { BangEqual } else { Bang };
+                self.add_token(token, source)
+            },
+            Some('=') => {
+                let token = if self.match_next('=', source) { EqualEqual } else { Equal };
+                self.add_token(token, source)
+            },
+            Some('<') => {
+                let token = if self.match_next('=', source) { LessEqual } else { Less };
+                self.add_token(token, source)
+            },
+            Some('>') => {
+                let token = if self.match_next('=', source) { GreaterEqual } else { Greater };
+                self.add_token(token, source)
+            },
+
+            // Defaults, and unknowns
             Some(_) => {
                 error = Some(LoxError {
                     line: self.line as i32,
@@ -81,7 +100,14 @@ impl Scanner {
         (self.current as usize) >= source.len()
     }
 
+    // TODO: I feel there should be a more idiomatic way of doing this
+    fn match_next(&mut self, m: char,  source: &str) -> bool {
+        if self.end_of_source(source) { return false; };
+        if source.chars().nth(self.current) != Some(m) { return false };
 
+        self.current += 1;
+        true
+    }
 
     fn advance(&mut self, source: &str) -> Option<char> {
         let c = source.chars().nth(self.current);
@@ -109,6 +135,14 @@ mod tests {
         assert!(token_scanned("+", Plus));
         assert!(token_scanned(";", Semicolon));
         assert!(token_scanned("*", Star));
+    }
+
+    #[test]
+    fn test_scan_tokens_two_character_tokens() {
+        assert!(token_scanned("!=", BangEqual));
+        assert!(token_scanned("==", EqualEqual));
+        assert!(token_scanned("<=", LessEqual));
+        assert!(token_scanned(">=", GreaterEqual));
     }
 
     #[test]
