@@ -38,6 +38,15 @@ impl Scanner {
 
         match c {
             Some('(') => self.add_token(LeftParen, source),
+            Some(')') => self.add_token(RightParen, source),
+            Some('{') => self.add_token(LeftBrace, source),
+            Some('}') => self.add_token(RightBrace, source),
+            Some(',') => self.add_token(Comma, source),
+            Some('.') => self.add_token(Dot, source),
+            Some('-') => self.add_token(Minus, source),
+            Some('+') => self.add_token(Plus, source),
+            Some(';') => self.add_token(Semicolon, source),
+            Some('*') => self.add_token(Star, source),
             Some(_) => (),
             None => (),
         };
@@ -61,5 +70,31 @@ impl Scanner {
         self.current += 1;
 
         c
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Scanner;
+    use crate::token_type::TokenType;
+    use crate::token_type::TokenType::*;
+
+    #[test]
+    fn test_single_character_tokens() {
+        assert!(token_scanned("(", LeftParen));
+        assert!(token_scanned(")", RightParen));
+        assert!(token_scanned("{", LeftBrace));
+        assert!(token_scanned("}", RightBrace));
+        assert!(token_scanned(",", Comma));
+        assert!(token_scanned(".", Dot));
+        assert!(token_scanned("-", Minus));
+        assert!(token_scanned("+", Plus));
+        assert!(token_scanned(";", Semicolon));
+        assert!(token_scanned("*", Star));
+    }
+
+    fn token_scanned(value: &str, ttype: TokenType) -> bool {
+        let tokens = Scanner::new().scan_tokens(String::from(value));
+        tokens[0].ttype == ttype
     }
 }
