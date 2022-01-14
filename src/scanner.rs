@@ -90,17 +90,22 @@ impl Scanner {
             // Types
             Some('"') => {
                 match self.string(source) {
-                    Ok(v) => self.add_token_string(LoxString, v, source),
+                    Ok(v) => self.add_token_stringish(LoxString, v, source),
                     Err(e) => error = Some(e),
                 }
             },
             Some(d) if d.is_numeric() => {
-                println!("{} is numeric", d);
                 match self.number(source) {
-                    Ok(v) => self.add_token_number(Number, v, source),
+                    Ok(v) => self.add_token_numeric(Number, v, source),
                     Err(e) => error = Some(e),
                 }
             },
+            Some(c) if c.is_alphabetic() || c == '_' => {
+                match self.identifier(source) {
+                    Ok(v) => self.add_token_stringish(Identifier, v, source),
+                    Err(e) => error = Some(e),
+                }
+            }
 
             // Defaults, and unknowns
             Some(_) => {
@@ -161,7 +166,20 @@ impl Scanner {
         Ok(String::from(&source[self.start..self.current]).parse().unwrap())
     }
 
-    fn add_token_string(&mut self, ttype: TokenType, literal: String, source: &str) {
+
+
+    fn identifier(&mut self, source: &str) -> Result<String, LoxError> {
+        while is_alphanumeric(&self.peek(source)
+            .ok_or(LoxError { line: self.line as i32,
+                                  place: String::from(""),
+                                  message: String::from("")})?) {
+            self.advance(source);
+        }
+
+        Ok(String::from(&source[self.start..self.current]))
+    }
+
+    fn add_token_stringish(&mut self, ttype: TokenType, literal: String, source: &str) {
         let literal = LoxType::Text(literal);
         let lexeme = String::from(&source[self.start..self.current]);
         let token = Token::new(ttype, lexeme, literal, self.line);
@@ -169,7 +187,7 @@ impl Scanner {
         self.tokens.push(token);
     }
 
-    fn add_token_number(&mut self, ttype: TokenType, literal: f64, source: &str) {
+    fn add_token_numeric(&mut self, ttype: TokenType, literal: f64, source: &str) {
         let literal = LoxType::Number(literal);
         let lexeme = String::from(&source[self.start..self.current]);
         let token = Token::new(ttype, lexeme, literal, self.line);
@@ -219,6 +237,14 @@ impl Scanner {
             source.chars().nth(self.current + 1)
         }
     }
+}
+
+fn is_alpha(c: &char) -> bool {
+    c.is_alphabetic() || c == &'_'
+}
+
+fn is_alphanumeric(c: &char) -> bool {
+    is_alpha(c) || c.is_numeric()
 }
 
 #[cfg(test)]
@@ -346,6 +372,25 @@ mod tests {
 
         match &tokens[0].literal {
             LoxType::Number(s) => assert_eq!(123.456, *s),
+            _ => { panic!("unexpected variant in LoxType") },
+        }
+    }
+
+    #[test]
+    fn test_scan_tokens_identifiers() {
+        let mut scanner = Scanner::new();
+        let tokens = scanner.scan_tokens(String::from("fun function_name"));
+        assert_eq!(2, tokens.len());
+        assert_eq!(Identifier, tokens[0].ttype);
+        assert_eq!(Identifier, tokens[1].ttype);
+
+        match &tokens[0].literal {
+            LoxType::Text(s) => assert_eq!("fun", s),
+            _ => { panic!("unexpected variant in LoxType") },
+        }
+
+        match &tokens[1].literal {
+            LoxType::Text(s) => assert_eq!("function_name", s),
             _ => { panic!("unexpected variant in LoxType") },
         }
     }
