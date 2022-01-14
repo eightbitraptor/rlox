@@ -90,22 +90,16 @@ impl Scanner {
 
             // Types
             Some('"') => {
-                match self.string(source) {
-                    Ok(v) => self.add_token_stringish(LoxString, v, source),
-                    Err(e) => Err(e),
-                }
+                self.string(source)
+                    .and_then(|v| self.add_token_stringish(LoxString, v, source))
             },
             Some(d) if d.is_numeric() => {
-                match self.number(source) {
-                    Ok(v) => self.add_token_numeric(Number, v, source),
-                    Err(e) => Err(e),
-                }
+                self.number(source)
+                    .and_then(|v| self.add_token_numeric(Number, v, source))
             },
             Some(c) if c.is_alphabetic() || c == '_' => {
-                match self.identifier(source) {
-                    Ok(v) => self.add_token_stringish(self.keywords(&v).unwrap(), v, source),
-                    Err(e) => Err(e),
-                }
+                self.identifier(source)
+                    .and_then(|v| self.add_token_stringish(self.keywords(&v).unwrap(), v, source))
             }
 
             // Defaults, and unknowns
