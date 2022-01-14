@@ -1,3 +1,5 @@
+#![feature(option_result_contains)]
+
 pub mod error;
 pub mod scanner;
 pub mod token_type;

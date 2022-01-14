@@ -71,6 +71,17 @@ impl Scanner {
                 self.add_token(token, source)
             },
 
+            // tokens with peekahead
+            Some('/') => {
+                if self.match_next('/', source) {
+                    while !self.peek(source).contains(&'\n')  && !self.end_of_source(source) {
+                        self.advance(source);
+                    }
+                } else {
+                    self.add_token(Slash, source);
+                }
+            }
+
             // Defaults, and unknowns
             Some(_) => {
                 error = Some(LoxError {
@@ -115,6 +126,14 @@ impl Scanner {
 
         c
     }
+
+    fn peek(&self, source: &str) -> Option<char> {
+        if self.end_of_source(source) {
+            Some('\0')
+        } else {
+            source.chars().nth(self.current)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -135,6 +154,7 @@ mod tests {
         assert!(token_scanned("+", Plus));
         assert!(token_scanned(";", Semicolon));
         assert!(token_scanned("*", Star));
+        assert!(token_scanned("/", Slash));
     }
 
     #[test]
@@ -143,6 +163,20 @@ mod tests {
         assert!(token_scanned("==", EqualEqual));
         assert!(token_scanned("<=", LessEqual));
         assert!(token_scanned(">=", GreaterEqual));
+    }
+
+    #[test]
+    fn test_scan_tokens_slash_with_following_chars() {
+        assert!(token_scanned("/foo", Slash));
+    }
+
+    #[test]
+    fn test_scan_tokens_slash_with_following_slash_is_a_comment() {
+        let tokens = Scanner::new()
+            .scan_tokens(
+                String::from("// Comments are ignored")
+            );
+        assert!(tokens.is_empty());
     }
 
     #[test]
