@@ -1,6 +1,6 @@
 use std::fmt;
 
-pub type LoxResult = std::result::Result<(), LoxError>;
+pub type LoxResult<T> = std::result::Result<T, LoxError>;
 
 // TODO: use &str here to remove allocations. Relies on understanding
 // lifetimes, which I currently don't

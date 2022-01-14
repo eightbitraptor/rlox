@@ -20,7 +20,7 @@ fn print_usage() {
     println!("Usage: rlox [script]");
 }
 
-fn run(source: String) -> LoxResult {
+fn run(source: String) -> LoxResult<()> {
     let mut scanner = Scanner::new();
     let tokens = scanner.scan_tokens(source);
 
@@ -28,7 +28,7 @@ fn run(source: String) -> LoxResult {
     Ok(())
 }
 
-fn run_prompt() -> LoxResult {
+fn run_prompt() -> LoxResult<()> {
     loop {
         let mut line = String::new();
 
@@ -44,7 +44,7 @@ fn run_prompt() -> LoxResult {
     }
 }
 
-fn run_file(path: &str) -> LoxResult {
+fn run_file(path: &str) -> LoxResult<()> {
     let path = Path::new(path);
     let display = path.display();
 
@@ -75,7 +75,7 @@ fn main() {
     };
 
     let status = match result {
-        Ok(()) => 0,
+        Ok(_) => 0,
         Err(e) => {
             if e.line == -1 {
                 print_usage();

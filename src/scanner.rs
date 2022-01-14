@@ -37,7 +37,7 @@ impl Scanner {
         &self.tokens
     }
 
-    fn scan_token(&mut self, source: &str) -> LoxResult {
+    fn scan_token(&mut self, source: &str) -> LoxResult<()> {
         let c = self.advance(source);
         let mut error = None;
 
@@ -125,7 +125,7 @@ impl Scanner {
         }
     }
 
-    fn string(&mut self, source: &str) -> Result<String, LoxError> {
+    fn string(&mut self, source: &str) -> LoxResult<String> {
         while !self.peek(source).contains(&'"') && !self.end_of_source(source) {
             if self.peek(source).contains(&'\n') { self.line+= 1 }
             self.advance(source);
@@ -142,7 +142,7 @@ impl Scanner {
         Ok(String::from(&source[self.start+1..self.current-1]))
     }
 
-    fn number(&mut self, source: &str) -> Result<f64, LoxError> {
+    fn number(&mut self, source: &str) -> LoxResult<f64> {
         while self.peek(source)
             .ok_or(LoxError { line: self.line as i32,
                               place: String::from(""),
@@ -168,7 +168,7 @@ impl Scanner {
 
 
 
-    fn identifier(&mut self, source: &str) -> Result<String, LoxError> {
+    fn identifier(&mut self, source: &str) -> LoxResult<String> {
         while is_alphanumeric(&self.peek(source)
             .ok_or(LoxError { line: self.line as i32,
                                   place: String::from(""),
@@ -238,7 +238,7 @@ impl Scanner {
         }
     }
 
-    fn keywords(&self, i: &str) -> Result<TokenType, LoxError> {
+    fn keywords(&self, i: &str) -> LoxResult<TokenType> {
         match i {
             "and" => Ok(And),
             "class" => Ok(Class),
