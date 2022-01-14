@@ -102,7 +102,7 @@ impl Scanner {
             },
             Some(c) if c.is_alphabetic() || c == '_' => {
                 match self.identifier(source) {
-                    Ok(v) => self.add_token_stringish(Identifier, v, source),
+                    Ok(v) => self.add_token_stringish(self.keywords(&v).unwrap(), v, source),
                     Err(e) => error = Some(e),
                 }
             }
@@ -237,6 +237,28 @@ impl Scanner {
             source.chars().nth(self.current + 1)
         }
     }
+
+    fn keywords(&self, i: &str) -> Result<TokenType, LoxError> {
+        match i {
+            "and" => Ok(And),
+            "class" => Ok(Class),
+            "else" => Ok(Else),
+            "false" => Ok(False),
+            "for" => Ok(For),
+            "fun" => Ok(Fun),
+            "if" => Ok(If),
+            "nil" => Ok(Nil),
+            "or" => Ok(Or),
+            "print" => Ok(Print),
+            "return" => Ok(Return),
+            "super" => Ok(Super),
+            "this" => Ok(This),
+            "true" => Ok(True),
+            "var" => Ok(Var),
+            "while" => Ok(While),
+            _ => Ok(Identifier),
+        }
+    }
 }
 
 fn is_alpha(c: &char) -> bool {
@@ -246,6 +268,8 @@ fn is_alpha(c: &char) -> bool {
 fn is_alphanumeric(c: &char) -> bool {
     is_alpha(c) || c.is_numeric()
 }
+
+
 
 #[cfg(test)]
 mod tests {
@@ -377,11 +401,11 @@ mod tests {
     }
 
     #[test]
-    fn test_scan_tokens_identifiers() {
+    fn test_scan_tokens_identifiers_and_keywords() {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("fun function_name"));
         assert_eq!(2, tokens.len());
-        assert_eq!(Identifier, tokens[0].ttype);
+        assert_eq!(Fun, tokens[0].ttype);
         assert_eq!(Identifier, tokens[1].ttype);
 
         match &tokens[0].literal {
