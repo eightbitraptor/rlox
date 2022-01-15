@@ -143,8 +143,6 @@ impl Scanner {
         Ok(String::from(&source[self.start..self.current]).parse().unwrap())
     }
 
-
-
     fn identifier(&mut self, source: &str) -> LoxResult<String> {
         while is_alphanumeric(
             &self.peek(source).ok_or(LoxError::new(self.line as i32, "Invalid peek into source"))?
