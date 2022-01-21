@@ -154,7 +154,10 @@ impl Scanner {
     }
 
     fn add_token_stringish(&mut self, ttype: TokenType, literal: String, source: &str) -> LoxResult<()> {
-        let literal = LoxType::Text(literal);
+        let literal = match ttype {
+            TokenType::LoxString => LoxType::Text(literal),
+            _ => LoxType::Text("".to_string()),
+        };
         let lexeme = String::from(&source[self.start..self.current]);
         let token = Token::new(ttype, lexeme, literal, self.line);
 

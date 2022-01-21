@@ -24,7 +24,9 @@ fn run(source: String) -> LoxResult<()> {
     let mut scanner = Scanner::new();
     let tokens = scanner.scan_tokens(source);
 
-    dbg!(tokens);
+    for token in tokens.iter() {
+        println!("{}", token);
+    }
     Ok(())
 }
 
