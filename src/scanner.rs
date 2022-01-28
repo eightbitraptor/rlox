@@ -24,7 +24,6 @@ impl Scanner {
         Scanner { tokens, start: 0, current: 0, line: 1 }
     }
 
-    // TODO: Maybe impl Iterator?
     pub fn scan_tokens(&mut self, source: String) -> &Vec<Token> {
         while !self.end_of_source(&source) {
             self.start = self.current;
@@ -33,6 +32,8 @@ impl Scanner {
                 Err(e) => println!("{}", e),
             }
         }
+
+        self.add_token(Eof, &source).expect("");
 
         &self.tokens
     }
@@ -156,7 +157,7 @@ impl Scanner {
     fn add_token_stringish(&mut self, ttype: TokenType, literal: String, source: &str) -> LoxResult<()> {
         let literal = match ttype {
             TokenType::LoxString => LoxType::Text(literal),
-            _ => LoxType::Text("".to_string()),
+            _ => LoxType::None,
         };
         let lexeme = String::from(&source[self.start..self.current]);
         let token = Token::new(ttype, lexeme, literal, self.line);
@@ -175,8 +176,11 @@ impl Scanner {
     }
 
     fn add_token(&mut self, ttype: TokenType, source: &str) -> LoxResult<()> {
-        let lexeme = String::from(&source[self.start..self.current]);
-        let token = Token::new(ttype, lexeme, LoxType::Text(String::from("")), self.line);
+        let lexeme = match ttype {
+            TokenType::Eof => String::from(""),
+            _ => String::from(&source[self.start..self.current])
+        };
+        let token = Token::new(ttype, lexeme, LoxType::None, self.line);
 
         self.tokens.push(token);
         Ok(())
@@ -293,14 +297,14 @@ mod tests {
             .scan_tokens(
                 String::from("// Comments are ignored")
             );
-        assert!(tokens.is_empty());
+        assert_eq!(1, tokens.len());
     }
 
     #[test]
     fn test_scan_tokens_seperated_by_whitespace() {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("! \t*"));
-        assert_eq!(2, tokens.len());
+        assert_eq!(3, tokens.len());
         assert_eq!(Bang, tokens[0].ttype);
         assert_eq!(Star, tokens[1].ttype);
     }
@@ -309,7 +313,7 @@ mod tests {
     fn test_scan_tokens_seperated_by_newlines_increments_line() {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("!\n*"));
-        assert_eq!(2, tokens.len());
+        assert_eq!(3, tokens.len());
         assert_eq!(2, scanner.line)
     }
 
@@ -317,7 +321,7 @@ mod tests {
     fn test_scan_tokens_strings() {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("\"Lox Strings are double quoted\""));
-        assert_eq!(1, tokens.len());
+        assert_eq!(2, tokens.len());
         assert_eq!(LoxString, tokens[0].ttype);
 
         match &tokens[0].literal {
@@ -330,7 +334,7 @@ mod tests {
     fn test_scan_tokens_strings_with_newlines() {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("\"Lox Strings are\n double quoted\""));
-        assert_eq!(1, tokens.len());
+        assert_eq!(2, tokens.len());
         assert_eq!(LoxString, tokens[0].ttype);
 
         match &tokens[0].literal {
@@ -344,7 +348,7 @@ mod tests {
     fn test_scan_tokens_strings_with_valid_tokens_within() {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("\"Lox *Strings* are\n -double- quoted\""));
-        assert_eq!(1, tokens.len());
+        assert_eq!(2, tokens.len());
         assert_eq!(LoxString, tokens[0].ttype);
 
         match &tokens[0].literal {
@@ -358,7 +362,7 @@ mod tests {
     fn test_scan_tokens_numbers() {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("123"));
-        assert_eq!(1, tokens.len());
+        assert_eq!(2, tokens.len());
         assert_eq!(Number, tokens[0].ttype);
 
         match &tokens[0].literal {
@@ -371,7 +375,7 @@ mod tests {
     fn test_scan_tokens_floating_point_numbers() {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("123.456"));
-        assert_eq!(1, tokens.len());
+        assert_eq!(2, tokens.len());
         assert_eq!(Number, tokens[0].ttype);
 
         match &tokens[0].literal {
@@ -384,7 +388,7 @@ mod tests {
     fn test_scan_tokens_identifiers_and_keywords() {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("fun function_name"));
-        assert_eq!(2, tokens.len());
+        assert_eq!(3, tokens.len());
         assert_eq!(Fun, tokens[0].ttype);
         assert_eq!(Identifier, tokens[1].ttype);
 

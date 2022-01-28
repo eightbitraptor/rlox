@@ -6,6 +6,7 @@ use convert_case::{Case, Casing};
 pub enum LoxType {
     Text(String),
     Number(f64),
+    None,
 }
 
 #[derive(Debug)]
@@ -38,9 +39,15 @@ impl fmt::Display for Token {
 impl fmt::Display for LoxType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LoxType::Number(c) => write!(f, "{:.1}", c),
-            LoxType::Text(c) if c.is_empty() => write!(f, "null"),
+            LoxType::Number(c) => {
+                if c.fract() == 0.0 {
+                    write!(f, "{:.1}", c)
+                } else {
+                    write!(f, "{}", c)
+                }
+            }
             LoxType::Text(c) => write!(f, "{}", c),
+            LoxType::None => write!(f, "null"),
         }
     }
 }
