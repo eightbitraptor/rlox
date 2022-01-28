@@ -2,7 +2,7 @@ use crate::token_type::TokenType;
 use crate::token_type::TokenType::*;
 use crate::error::*;
 
-use crate::token::Token;
+use crate::token::{Token, LoxType, LoxNone};
 
 #[derive(Debug)]
 pub struct Scanner {
@@ -33,7 +33,7 @@ impl Scanner {
             }
         }
 
-        self.add_token(EOF, &source).expect("");
+        self.add_token::<LoxNone>(EOF, None, &source).expect("");
 
         &self.tokens
     }
@@ -42,33 +42,33 @@ impl Scanner {
         let c = self.advance(source);
 
         match c {
-            Some('(') => self.add_token(LEFT_PAREN, source),
-            Some(')') => self.add_token(RIGHT_PAREN, source),
-            Some('{') => self.add_token(LEFT_BRACE, source),
-            Some('}') => self.add_token(RIGHT_BRACE, source),
-            Some(',') => self.add_token(COMMA, source),
-            Some('.') => self.add_token(DOT, source),
-            Some('-') => self.add_token(MINUS, source),
-            Some('+') => self.add_token(PLUS, source),
-            Some(';') => self.add_token(SEMICOLON, source),
-            Some('*') => self.add_token(STAR, source),
+            Some('(') => self.add_token::<LoxNone>(LEFT_PAREN, None, source),
+            Some(')') => self.add_token::<LoxNone>(RIGHT_PAREN, None, source),
+            Some('{') => self.add_token::<LoxNone>(LEFT_BRACE, None, source),
+            Some('}') => self.add_token::<LoxNone>(RIGHT_BRACE, None, source),
+            Some(',') => self.add_token::<LoxNone>(COMMA, None, source),
+            Some('.') => self.add_token::<LoxNone>(DOT, None, source),
+            Some('-') => self.add_token::<LoxNone>(MINUS, None, source),
+            Some('+') => self.add_token::<LoxNone>(PLUS, None, source),
+            Some(';') => self.add_token::<LoxNone>(SEMICOLON, None, source),
+            Some('*') => self.add_token::<LoxNone>(STAR, None, source),
 
             // These tokens consist of two specific characters
             Some('!') => {
                 let token = if self.match_next('=', source) { BANG_EQUAL } else { BANG };
-                self.add_token(token, source)
+                self.add_token::<LoxNone>(token, None, source)
             },
             Some('=') => {
                 let token = if self.match_next('=', source) { EQUAL_EQUAL } else { EQUAL };
-                self.add_token(token, source)
+                self.add_token::<LoxNone>(token, None, source)
             },
             Some('<') => {
                 let token = if self.match_next('=', source) { LESS_EQUAL } else { LESS };
-                self.add_token(token, source)
+                self.add_token::<LoxNone>(token, None, source)
             },
             Some('>') => {
                 let token = if self.match_next('=', source) { GREATER_EQUAL } else { GREATER };
-                self.add_token(token, source)
+                self.add_token::<LoxNone>(token, None, source)
             },
 
             // tokens with peekahead
@@ -79,7 +79,7 @@ impl Scanner {
                     }
                     Ok(())
                 } else {
-                    self.add_token(SLASH, source)
+                    self.add_token::<LoxNone>(SLASH, None, source)
                 }
             },
 
@@ -92,15 +92,15 @@ impl Scanner {
             // Types
             Some('"') => {
                 self.string(source)
-                    .and_then(|v| self.add_token_stringish(STRING, v, source))
+                    .and_then(|v| self.add_token::<String>(STRING, Some(Box::new(v)), source))
             },
             Some(d) if d.is_numeric() => {
                 self.number(source)
-                    .and_then(|v| self.add_token_numeric(NUMBER, v, source))
+                    .and_then(|v| self.add_token::<f64>(NUMBER, Some(Box::new(v)), source))
             },
             Some(c) if c.is_alphabetic() || c == '_' => {
                 self.identifier(source)
-                    .and_then(|v| self.add_token_stringish(self.keywords(&v).unwrap(), v, source))
+                    .and_then(|v| self.add_token::<LoxNone>(self.keywords(&v).unwrap(), None, source))
             }
 
             // Defaults, and unknowns
@@ -154,33 +154,12 @@ impl Scanner {
         Ok(String::from(&source[self.start..self.current]))
     }
 
-    fn add_token_stringish(&mut self, ttype: TokenType, literal: String, source: &str) -> LoxResult<()> {
-        let literal = match ttype {
-            STRING => Box::new(literal),
-            _ => Box::new(String::from("null")),
+    fn add_token<T: LoxType>(&mut self, ttype: TokenType, literal: Option<Box<dyn LoxType>>, source: &str) -> LoxResult<()> {
+        let literal = match literal {
+            Some(x) => x,
+            None => Box::new(String::from("null")),
         };
         let lexeme = String::from(&source[self.start..self.current]);
-        let token = Token::new(ttype, lexeme, literal, self.line);
-
-        self.tokens.push(token);
-        Ok(())
-    }
-
-    fn add_token_numeric(&mut self, ttype: TokenType, literal: f64, source: &str) -> LoxResult<()> {
-        let literal = Box::new(literal);
-        let lexeme = String::from(&source[self.start..self.current]);
-        let token = Token::new(ttype, lexeme, literal, self.line);
-
-        self.tokens.push(token);
-        Ok(())
-    }
-
-    fn add_token(&mut self, ttype: TokenType, source: &str) -> LoxResult<()> {
-        let literal = Box::new(String::from("null"));
-        let lexeme = match ttype {
-            TokenType::EOF => String::from(""),
-            _ => String::from(&source[self.start..self.current])
-        };
         let token = Token::new(ttype, lexeme, literal, self.line);
 
         self.tokens.push(token);
@@ -216,7 +195,7 @@ impl Scanner {
     }
 
     fn peek_next(&self, source: &str) -> Option<char> {
-        if self.current + 1 as usize >= source.len() {
+        if self.current + 1 >= source.len() {
             Some('\0')
         } else {
             source.chars().nth(self.current + 1)
@@ -324,11 +303,7 @@ mod tests {
         let tokens = scanner.scan_tokens(String::from("\"Lox Strings are double quoted\""));
         assert_eq!(2, tokens.len());
         assert_eq!(STRING, tokens[0].ttype);
-
-        match &tokens[0].literal {
-            LoxType::Text(s) => assert_eq!("Lox Strings are double quoted", s),
-            _ => { panic!("unexpected variant in LoxType") },
-        }
+        assert_eq!("Lox Strings are double quoted", tokens[0].literal.lox_print());
     }
 
     #[test]
@@ -366,10 +341,8 @@ mod tests {
         assert_eq!(2, tokens.len());
         assert_eq!(NUMBER, tokens[0].ttype);
 
-        match &tokens[0].literal {
-            LoxType::Number(s) => assert_eq!(123_f64, *s),
-            _ => { panic!("unexpected variant in LoxType") },
-        }
+
+        assert_eq!(123_f64, tokens[0].literal);
     }
 
     #[test]
@@ -379,10 +352,7 @@ mod tests {
         assert_eq!(2, tokens.len());
         assert_eq!(NUMBER, tokens[0].ttype);
 
-        match &tokens[0].literal {
-            LoxType::Number(s) => assert_eq!(123.456, *s),
-            _ => { panic!("unexpected variant in LoxType") },
-        }
+        assert_eq!(123.456, tokens[0].literal);
     }
 
     #[test]

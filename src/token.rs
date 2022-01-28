@@ -1,8 +1,19 @@
 use crate::token_type::TokenType;
 use std::fmt;
+use std::any::TypeId;
+
+#[derive(Debug)]
+pub struct LoxNone {}
 
 pub trait LoxType: fmt::Display + fmt::Debug {
     fn lox_print(&self) -> String;
+
+    fn maybe_float(&self) -> Option<f64> {
+        match TypeId::of(self) == TypeId::of::<f64>() {
+            true => Some(self),
+            false => None,
+        }
+    }
 }
 
 impl LoxType for String {
@@ -17,6 +28,18 @@ impl LoxType for f64 {
             x if x > 0.0 => format!("{}", self),
             _ =>  format!("{:.1}", self),
         }
+    }
+}
+
+impl LoxType for LoxNone {
+    fn lox_print(&self) -> String {
+        "null".to_string()
+    }
+}
+
+impl fmt::Display for LoxNone {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "null")
     }
 }
 
