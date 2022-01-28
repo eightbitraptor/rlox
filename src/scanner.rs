@@ -393,12 +393,12 @@ mod tests {
         assert_eq!(IDENTIFIER, tokens[1].ttype);
 
         match &tokens[0].literal {
-            LoxType::Text(s) => assert_eq!("fun", s),
+            LoxType::None => assert!(true),
             _ => { panic!("unexpected variant in LoxType") },
         }
 
         match &tokens[1].literal {
-            LoxType::Text(s) => assert_eq!("function_name", s),
+            LoxType::None => assert!(true),
             _ => { panic!("unexpected variant in LoxType") },
         }
     }
