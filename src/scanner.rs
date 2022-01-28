@@ -2,7 +2,7 @@ use crate::token_type::TokenType;
 use crate::token_type::TokenType::*;
 use crate::error::*;
 
-use crate::token::{Token, LoxType};
+use crate::token::Token;
 
 #[derive(Debug)]
 pub struct Scanner {
@@ -156,8 +156,8 @@ impl Scanner {
 
     fn add_token_stringish(&mut self, ttype: TokenType, literal: String, source: &str) -> LoxResult<()> {
         let literal = match ttype {
-            TokenType::STRING => LoxType::Text(literal),
-            _ => LoxType::None,
+            STRING => Box::new(literal),
+            _ => Box::new(String::from("null")),
         };
         let lexeme = String::from(&source[self.start..self.current]);
         let token = Token::new(ttype, lexeme, literal, self.line);
@@ -167,7 +167,7 @@ impl Scanner {
     }
 
     fn add_token_numeric(&mut self, ttype: TokenType, literal: f64, source: &str) -> LoxResult<()> {
-        let literal = LoxType::Number(literal);
+        let literal = Box::new(literal);
         let lexeme = String::from(&source[self.start..self.current]);
         let token = Token::new(ttype, lexeme, literal, self.line);
 
@@ -176,11 +176,12 @@ impl Scanner {
     }
 
     fn add_token(&mut self, ttype: TokenType, source: &str) -> LoxResult<()> {
+        let literal = Box::new(String::from("null"));
         let lexeme = match ttype {
             TokenType::EOF => String::from(""),
             _ => String::from(&source[self.start..self.current])
         };
-        let token = Token::new(ttype, lexeme, LoxType::None, self.line);
+        let token = Token::new(ttype, lexeme, literal, self.line);
 
         self.tokens.push(token);
         Ok(())
