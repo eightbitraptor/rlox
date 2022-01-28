@@ -1,6 +1,5 @@
 use crate::token_type::TokenType;
 use std::fmt;
-use convert_case::{Case, Casing};
 
 #[derive(Debug)]
 pub enum LoxType {
@@ -26,13 +25,7 @@ impl Token {
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let dttype: String = self.ttype
-            .to_string()
-            .to_case(Case::ScreamingSnake)
-            .replace("LOX_", "");
-
-        write!(f, "{} {} {}",
-               dttype, self.lexeme, self.literal)
+        write!(f, "{} {} {}", self.ttype, self.lexeme, self.literal)
     }
 }
 

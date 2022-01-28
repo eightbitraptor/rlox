@@ -33,7 +33,7 @@ impl Scanner {
             }
         }
 
-        self.add_token(Eof, &source).expect("");
+        self.add_token(EOF, &source).expect("");
 
         &self.tokens
     }
@@ -42,32 +42,32 @@ impl Scanner {
         let c = self.advance(source);
 
         match c {
-            Some('(') => self.add_token(LeftParen, source),
-            Some(')') => self.add_token(RightParen, source),
-            Some('{') => self.add_token(LeftBrace, source),
-            Some('}') => self.add_token(RightBrace, source),
-            Some(',') => self.add_token(Comma, source),
-            Some('.') => self.add_token(Dot, source),
-            Some('-') => self.add_token(Minus, source),
-            Some('+') => self.add_token(Plus, source),
-            Some(';') => self.add_token(Semicolon, source),
-            Some('*') => self.add_token(Star, source),
+            Some('(') => self.add_token(LEFT_PAREN, source),
+            Some(')') => self.add_token(RIGHT_PAREN, source),
+            Some('{') => self.add_token(LEFT_BRACE, source),
+            Some('}') => self.add_token(RIGHT_BRACE, source),
+            Some(',') => self.add_token(COMMA, source),
+            Some('.') => self.add_token(DOT, source),
+            Some('-') => self.add_token(MINUS, source),
+            Some('+') => self.add_token(PLUS, source),
+            Some(';') => self.add_token(SEMICOLON, source),
+            Some('*') => self.add_token(STAR, source),
 
             // These tokens consist of two specific characters
             Some('!') => {
-                let token = if self.match_next('=', source) { BangEqual } else { Bang };
+                let token = if self.match_next('=', source) { BANG_EQUAL } else { BANG };
                 self.add_token(token, source)
             },
             Some('=') => {
-                let token = if self.match_next('=', source) { EqualEqual } else { Equal };
+                let token = if self.match_next('=', source) { EQUAL_EQUAL } else { EQUAL };
                 self.add_token(token, source)
             },
             Some('<') => {
-                let token = if self.match_next('=', source) { LessEqual } else { Less };
+                let token = if self.match_next('=', source) { LESS_EQUAL } else { LESS };
                 self.add_token(token, source)
             },
             Some('>') => {
-                let token = if self.match_next('=', source) { GreaterEqual } else { Greater };
+                let token = if self.match_next('=', source) { GREATER_EQUAL } else { GREATER };
                 self.add_token(token, source)
             },
 
@@ -79,7 +79,7 @@ impl Scanner {
                     }
                     Ok(())
                 } else {
-                    self.add_token(Slash, source)
+                    self.add_token(SLASH, source)
                 }
             },
 
@@ -92,11 +92,11 @@ impl Scanner {
             // Types
             Some('"') => {
                 self.string(source)
-                    .and_then(|v| self.add_token_stringish(LoxString, v, source))
+                    .and_then(|v| self.add_token_stringish(STRING, v, source))
             },
             Some(d) if d.is_numeric() => {
                 self.number(source)
-                    .and_then(|v| self.add_token_numeric(Number, v, source))
+                    .and_then(|v| self.add_token_numeric(NUMBER, v, source))
             },
             Some(c) if c.is_alphabetic() || c == '_' => {
                 self.identifier(source)
@@ -156,7 +156,7 @@ impl Scanner {
 
     fn add_token_stringish(&mut self, ttype: TokenType, literal: String, source: &str) -> LoxResult<()> {
         let literal = match ttype {
-            TokenType::LoxString => LoxType::Text(literal),
+            TokenType::STRING => LoxType::Text(literal),
             _ => LoxType::None,
         };
         let lexeme = String::from(&source[self.start..self.current]);
@@ -177,7 +177,7 @@ impl Scanner {
 
     fn add_token(&mut self, ttype: TokenType, source: &str) -> LoxResult<()> {
         let lexeme = match ttype {
-            TokenType::Eof => String::from(""),
+            TokenType::EOF => String::from(""),
             _ => String::from(&source[self.start..self.current])
         };
         let token = Token::new(ttype, lexeme, LoxType::None, self.line);
@@ -224,23 +224,23 @@ impl Scanner {
 
     fn keywords(&self, i: &str) -> LoxResult<TokenType> {
         match i {
-            "and" => Ok(And),
-            "class" => Ok(Class),
-            "else" => Ok(Else),
-            "false" => Ok(False),
-            "for" => Ok(For),
-            "fun" => Ok(Fun),
-            "if" => Ok(If),
-            "nil" => Ok(Nil),
-            "or" => Ok(Or),
-            "print" => Ok(Print),
-            "return" => Ok(Return),
-            "super" => Ok(Super),
-            "this" => Ok(This),
-            "true" => Ok(True),
-            "var" => Ok(Var),
-            "while" => Ok(While),
-            _ => Ok(Identifier),
+            "and" => Ok(AND),
+            "class" => Ok(CLASS),
+            "else" => Ok(ELSE),
+            "false" => Ok(FALSE),
+            "for" => Ok(FOR),
+            "fun" => Ok(FUN),
+            "if" => Ok(IF),
+            "nil" => Ok(NIL),
+            "or" => Ok(OR),
+            "print" => Ok(PRINT),
+            "return" => Ok(RETURN),
+            "super" => Ok(SUPER),
+            "this" => Ok(THIS),
+            "true" => Ok(TRUE),
+            "var" => Ok(VAR),
+            "while" => Ok(WHILE),
+            _ => Ok(IDENTIFIER),
         }
     }
 }
@@ -264,30 +264,30 @@ mod tests {
 
     #[test]
     fn test_scan_tokens_all_single_character_tokens() {
-        assert!(token_scanned("(", LeftParen));
-        assert!(token_scanned(")", RightParen));
-        assert!(token_scanned("{", LeftBrace));
-        assert!(token_scanned("}", RightBrace));
-        assert!(token_scanned(",", Comma));
-        assert!(token_scanned(".", Dot));
-        assert!(token_scanned("-", Minus));
-        assert!(token_scanned("+", Plus));
-        assert!(token_scanned(";", Semicolon));
-        assert!(token_scanned("*", Star));
-        assert!(token_scanned("/", Slash));
+        assert!(token_scanned("(", LEFT_PAREN));
+        assert!(token_scanned(")", RIGHT_PAREN));
+        assert!(token_scanned("{", LEFT_BRACE));
+        assert!(token_scanned("}", RIGHT_BRACE));
+        assert!(token_scanned(",", COMMA));
+        assert!(token_scanned(".", DOT));
+        assert!(token_scanned("-", MINUS));
+        assert!(token_scanned("+", PLUS));
+        assert!(token_scanned(";", SEMICOLON));
+        assert!(token_scanned("*", STAR));
+        assert!(token_scanned("/", SLASH));
     }
 
     #[test]
     fn test_scan_tokens_two_character_tokens() {
-        assert!(token_scanned("!=", BangEqual));
-        assert!(token_scanned("==", EqualEqual));
-        assert!(token_scanned("<=", LessEqual));
-        assert!(token_scanned(">=", GreaterEqual));
+        assert!(token_scanned("!=", BANG_EQUAL));
+        assert!(token_scanned("==", EQUAL_EQUAL));
+        assert!(token_scanned("<=", LESS_EQUAL));
+        assert!(token_scanned(">=", GREATER_EQUAL));
     }
 
     #[test]
     fn test_scan_tokens_slash_with_following_chars() {
-        assert!(token_scanned("/foo", Slash));
+        assert!(token_scanned("/foo", SLASH));
     }
 
     #[test]
@@ -305,8 +305,8 @@ mod tests {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("! \t*"));
         assert_eq!(3, tokens.len());
-        assert_eq!(Bang, tokens[0].ttype);
-        assert_eq!(Star, tokens[1].ttype);
+        assert_eq!(BANG, tokens[0].ttype);
+        assert_eq!(STAR, tokens[1].ttype);
     }
 
     #[test]
@@ -322,7 +322,7 @@ mod tests {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("\"Lox Strings are double quoted\""));
         assert_eq!(2, tokens.len());
-        assert_eq!(LoxString, tokens[0].ttype);
+        assert_eq!(STRING, tokens[0].ttype);
 
         match &tokens[0].literal {
             LoxType::Text(s) => assert_eq!("Lox Strings are double quoted", s),
@@ -335,7 +335,7 @@ mod tests {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("\"Lox Strings are\n double quoted\""));
         assert_eq!(2, tokens.len());
-        assert_eq!(LoxString, tokens[0].ttype);
+        assert_eq!(STRING, tokens[0].ttype);
 
         match &tokens[0].literal {
             LoxType::Text(s) => assert_eq!("Lox Strings are\n double quoted", s),
@@ -349,7 +349,7 @@ mod tests {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("\"Lox *Strings* are\n -double- quoted\""));
         assert_eq!(2, tokens.len());
-        assert_eq!(LoxString, tokens[0].ttype);
+        assert_eq!(STRING, tokens[0].ttype);
 
         match &tokens[0].literal {
             LoxType::Text(s) => assert_eq!("Lox *Strings* are\n -double- quoted", s),
@@ -363,7 +363,7 @@ mod tests {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("123"));
         assert_eq!(2, tokens.len());
-        assert_eq!(Number, tokens[0].ttype);
+        assert_eq!(NUMBER, tokens[0].ttype);
 
         match &tokens[0].literal {
             LoxType::Number(s) => assert_eq!(123_f64, *s),
@@ -376,7 +376,7 @@ mod tests {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("123.456"));
         assert_eq!(2, tokens.len());
-        assert_eq!(Number, tokens[0].ttype);
+        assert_eq!(NUMBER, tokens[0].ttype);
 
         match &tokens[0].literal {
             LoxType::Number(s) => assert_eq!(123.456, *s),
@@ -389,8 +389,8 @@ mod tests {
         let mut scanner = Scanner::new();
         let tokens = scanner.scan_tokens(String::from("fun function_name"));
         assert_eq!(3, tokens.len());
-        assert_eq!(Fun, tokens[0].ttype);
-        assert_eq!(Identifier, tokens[1].ttype);
+        assert_eq!(FUN, tokens[0].ttype);
+        assert_eq!(IDENTIFIER, tokens[1].ttype);
 
         match &tokens[0].literal {
             LoxType::Text(s) => assert_eq!("fun", s),
