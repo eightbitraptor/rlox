@@ -54,22 +54,17 @@ impl Scanner {
             Some('*') => self.add_token(STAR, source),
 
             // These tokens consist of two specific characters
-            Some('!') => {
-                let token = if self.match_next('=', source) { BANG_EQUAL } else { BANG };
-                self.add_token(token, source)
-            },
-            Some('=') => {
-                let token = if self.match_next('=', source) { EQUAL_EQUAL } else { EQUAL };
-                self.add_token(token, source)
-            },
-            Some('<') => {
-                let token = if self.match_next('=', source) { LESS_EQUAL } else { LESS };
-                self.add_token(token, source)
-            },
-            Some('>') => {
-                let token = if self.match_next('=', source) { GREATER_EQUAL } else { GREATER };
-                self.add_token(token, source)
-            },
+            Some('!') if self.match_next('=', source) => self.add_token (BANG_EQUAL, source),
+            Some('!') => self.add_token(BANG, source),
+
+            Some('=') if self.match_next('=', source) => self.add_token(EQUAL_EQUAL, source),
+            Some('=') => self.add_token(EQUAL, source),
+
+            Some('<') if self.match_next('=', source)=> self.add_token(LESS_EQUAL, source),
+            Some('<') => self.add_token(LESS, source),
+
+            Some('>') if self.match_next('=', source) => self.add_token(GREATER_EQUAL, source),
+            Some('>') => self.add_token(GREATER, source),
 
             // tokens with peekahead
             Some('/') => {
