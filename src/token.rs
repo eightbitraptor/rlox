@@ -12,7 +12,6 @@ pub enum LoxType {
 pub struct Token {
     pub ttype: TokenType,
     pub lexeme: String,
-    // The original book uses Object for this. Idk how to make an equivalent in Rust yet
     pub literal: LoxType,
     pub line: usize,
 }
