@@ -121,7 +121,7 @@ impl Scanner {
 
     fn number(&mut self, source: &str) -> LoxResult<f64> {
         while self.peek(source)
-            .ok_or(LoxError::new(self.line as i32, "Invalid peek into source"))?
+            .ok_or_else(|| LoxError::new(self.line as i32, "Invalid peek into source"))?
             .is_numeric() {
                 self.advance(source);
             }
@@ -130,7 +130,7 @@ impl Scanner {
             self.advance(source);
 
             while self.peek(source)
-                .ok_or(LoxError::new(self.line as i32, "Invalid peek into source"))?
+                .ok_or_else(|| LoxError::new(self.line as i32, "Invalid peek into source"))?
                 .is_numeric() {
                     self.advance(source);
                 }
@@ -141,7 +141,8 @@ impl Scanner {
 
     fn identifier(&mut self, source: &str) -> LoxResult<String> {
         while is_alphanumeric(
-            &self.peek(source).ok_or(LoxError::new(self.line as i32, "Invalid peek into source"))?
+            &self.peek(source)
+                .ok_or_else(|| LoxError::new(self.line as i32, "Invalid peek into source"))?
         ) {
             self.advance(source);
         }
@@ -210,7 +211,7 @@ impl Scanner {
     }
 
     fn peek_next(&self, source: &str) -> Option<char> {
-        if self.current + 1 as usize >= source.len() {
+        if self.current + 1 >= source.len() {
             Some('\0')
         } else {
             source.chars().nth(self.current + 1)
